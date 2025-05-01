@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Nuclear Reactor Digital Twin</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            max-width: 350px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 250px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-label {
+            font-weight: 600;
+        }
+        .stat-value {
+            color: #4caf50;
+            font-family: 'Courier New', monospace;
+        }
+        .critical {
+            color: #ff5252;
+            animation: pulse 1s infinite;
+        }
+        .warning {
+            color: #ffc107;
+        }
+        .normal {
+            color: #4caf50;
+        }
+        #control-panel {
+            position: absolute;
+            left: 0%;
+            bottom:5%;
+            transform: none;
+            height: 50vh; /* <-- Add this line to make it half the viewport height */
+            overflow-y: auto; /* Optional: add scrolling if content exceeds height */
+            
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            width: 350px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .slider-container {
+            margin: 15px 0;
+        }
+        #rod-slider {
+            width: 80%;
+            margin: 0 auto;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #333;
+            outline: none;
+        }
+        #rod-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+        }
+        .action-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .emergency-button {
+            background: #f44336;
+        }
+        .action-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .action-button:active {
+            transform: translateY(1px);
+        }
+        #alerts {
+            position: absolute;
+            bottom: 20px;
+            right: 0%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 250px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .alert-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .alert-critical {
+            color: #ff5252;
+        }
+        .alert-warning {
+            color: #ffc107;
+        }
+        .alert-normal {
+            color: #4caf50;
+        }
+        #reactor-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 24px;
+            z-index: 200;
+            display: none;
+            border: 2px solid #f44336;
+            text-align: center;
+        }
+        #reactor-state h2 {
+            margin-top: 0;
+            color: #f44336;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .progress-bar {
+            height: 5px;
+            background: #333;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4caf50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .tab-container {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background: #333;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab:last-child {
+            margin-right: 0;
+        }
+        .tab.active {
+            background: #2196F3;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h2>Advanced Reactor Digital Twin</h2>
+
+        </div>
+        <div id="stats">
+            <h3>Reactor Status</h3>
+            <div class="stat-row">
+                <span class="stat-label">Core Temp:</span>
+                <span class="stat-value" id="temp-value">285.0°C</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="temp-bar"></div></div>
+            <div class="stat-row">
+                <span class="stat-label">Pressure:</span>
+                <span class="stat-value" id="pressure-value">15.5 MPa</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pressure-bar"></div></div>
+            <div class="stat-row">
+                <span class="stat-label">Power Output:</span>
+                <span class="stat-value" id="power-value">95.0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="power-bar"></div></div>
+            <div class="stat-row">
+                <span class="stat-label">Neutron Flux:</span>
+                <span class="stat-value" id="flux-value">3.2×10¹⁴ n/cm²s</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Coolant Flow:</span>
+                <span class="stat-value" id="coolant-value">17.2 m³/s</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Control Rods:</span>
+                <span class="stat-value" id="rods-value">65.0% Inserted</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Reactor State:</span>
+                <span class="stat-value normal" id="state-value">OPERATIONAL</span>
+            </div>
+        </div>
+        
+        <div id="alerts">
+            <h3>System Alerts</h3>
+            <div id="alerts-container">
+                <div class="alert-item normal">All systems normal</div>
+            </div>
+        </div>
+        
+        <div id="reactor-state">
+            <h2>REACTOR TRIP</h2>
+            <p>Emergency shutdown initiated</p>
+            <p>Control rods fully inserted</p>
+            <p>Cooling systems activated</p>
+            <button class="action-button" id="reset-button">Reset Simulation</button>
+        </div>
+        
+        <div id="control-panel">
+            <div class="tab-container">
+                <div class="tab active" data-tab="controls">Controls</div>
+                <div class="tab" data-tab="safety">Safety Systems</div>
+                <div class="tab" data-tab="diagnostics">Diagnostics</div>
+            </div>
+            
+            <div class="tab-content active" id="controls-tab">
+                <h3>Reactor Control</h3>
+                <div class="slider-container">
+                    <label for="rod-slider">Control Rod Insertion: <span id="rod-percentage">65.0</span>%</label><br>
+                    <input type="range" id="rod-slider" min="0" max="100" value="65" step="0.1">
+                </div>
+                <div>
+                    <button class="action-button" id="scram-button">SCRAM (Emergency Shutdown)</button>
+                    <button class="action-button" id="withdraw-button">Full Withdrawal</button>
+                </div>
+                <div class="slider-container">
+                    <label for="coolant-slider">Coolant Flow Rate: <span id="coolant-percentage">85.0</span>%</label><br>
+                    <input type="range" id="coolant-slider" min="50" max="100" value="85" step="0.1">
+                </div>
+            </div>
+            
+            <div class="tab-content" id="safety-tab">
+                <h3>Safety Systems</h3>
+                <div>
+                    <button class="action-button" id="boron-injection-button">Boron Injection System</button>
+                    <button class="action-button" id="backup-cooling-button">Activate Backup Cooling</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="action-button emergency-button" id="containment-button">Seal Containment</button>
+                </div>
+                <div class="stat-row" style="margin-top: 15px;">
+                    <span class="stat-label">Safety Systems:</span>
+                    <span class="stat-value normal" id="safety-status">ONLINE</span>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="diagnostics-tab">
+                <h3>Core Diagnostics</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Fuel Burnup:</span>
+                    <span class="stat-value" id="burnup-value">12.3%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Xenon Poisoning:</span>
+                    <span class="stat-value" id="xenon-value">2.1%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Moderator Temp:</span>
+                    <span class="stat-value" id="moderator-value">290.5°C</span>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="action-button" id="diagnostic-button">Run Full Diagnostic</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script>
+        // Main scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x121212);
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 8, 20);
+        
+        // Renderer setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('container').appendChild(renderer.domElement);
+        
+        // Improved Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.7);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        directionalLight.position.set(10, 20, 15);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.camera.left = -20;
+        directionalLight.shadow.camera.right = 20;
+        directionalLight.shadow.camera.top = 20;
+        directionalLight.shadow.camera.bottom = -20;
+        scene.add(directionalLight);
+        
+        // Core glow effect
+        const coreGlow = new THREE.PointLight(0xff5500, 2, 15, 2);
+        coreGlow.position.set(0, 3, 0);
+        scene.add(coreGlow);
+        
+        // Create floor/ground with better texture
+        const floorGeometry = new THREE.PlaneGeometry(50, 50);
+        const floorTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
+        floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(10, 10);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            map: floorTexture,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Create containment building (dome with more detail)
+        const domeGeometry = new THREE.SphereGeometry(8, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
+        const domeMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xcccccc, 
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.7
+        });
+        const dome = new THREE.Mesh(domeGeometry, domeMaterial);
+        dome.position.y = 8;
+        dome.castShadow = true;
+        scene.add(dome);
+        
+        // Add containment building base (concrete structure)
+        const containmentBaseGeometry = new THREE.CylinderGeometry(8.5, 8.5, 1, 64);
+        const containmentBaseMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x999999,
+            roughness: 0.6,
+            metalness: 0.2
+        });
+        const containmentBase = new THREE.Mesh(containmentBaseGeometry, containmentBaseMaterial);
+        containmentBase.position.y = 0.5;
+        containmentBase.castShadow = true;
+        scene.add(containmentBase);
+        
+        // Create reactor vessel with more detail
+        const reactorGeometry = new THREE.CylinderGeometry(2.5, 2.5, 8, 64);
+        const reactorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x777777,
+            roughness: 0.2,
+            metalness: 0.9,
+            envMapIntensity: 0.5
+        });
+        const reactor = new THREE.Mesh(reactorGeometry, reactorMaterial);
+        reactor.position.y = 4;
+        reactor.castShadow = true;
+        scene.add(reactor);
+        
+        // Add reactor vessel details (bolts, flanges, etc.)
+        const boltGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 8);
+        const boltMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x333333,
+            roughness: 0.3,
+            metalness: 0.9
+        });
+        
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const bolt = new THREE.Mesh(boltGeometry, boltMaterial);
+            bolt.position.set(Math.cos(angle) * 2.7, 8, Math.sin(angle) * 2.7);
+            bolt.rotation.x = Math.PI / 2;
+            scene.add(bolt);
+        }
+        
+        // Create reactor core (inner cylinder with improved glow)
+        const coreGeometry = new THREE.CylinderGeometry(1.8, 1.8, 6, 64);
+        const coreMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xff9500,
+            emissive: 0xff5500,
+            emissiveIntensity: 1.2,
+            transparent: true,
+            opacity: 0.9,
+            roughness: 0.1,
+            metalness: 0.5
+        });
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        core.position.y = 4;
+        scene.add(core);
+        
+        // Add fuel assemblies inside core
+        const fuelAssemblyGeometry = new THREE.BoxGeometry(0.2, 5.5, 0.2);
+        const fuelAssemblyMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x00ff00,
+            emissive: 0x00aa00,
+            emissiveIntensity: 0.3,
+            roughness: 0.4,
+            metalness: 0.7
+        });
+        
+        for (let x = -1; x <= 1; x += 0.5) {
+            for (let z = -1; z <= 1; z += 0.5) {
+                if (Math.sqrt(x*x + z*z) <= 1.5) {
+                    const assembly = new THREE.Mesh(fuelAssemblyGeometry, fuelAssemblyMaterial);
+                    assembly.position.set(x * 1.2, 4, z * 1.2);
+                    scene.add(assembly);
+                }
+            }
+        }
+        
+        // Create control rods with more detail
+        const rodGroup = new THREE.Group();
+        scene.add(rodGroup);
+        
+        const rodHandleGroup = new THREE.Group();
+        scene.add(rodHandleGroup);
+        
+        const rodGeometry = new THREE.CylinderGeometry(0.15, 0.15, 4, 16);
+        const rodMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x333333,
+            roughness: 0.3,
+            metalness: 0.8
+        });
+        
+        const rodTipGeometry = new THREE.ConeGeometry(0.15, 0.3, 8);
+        const rodTipMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x111111,
+            roughness: 0.1,
+            metalness: 0.9
+        });
+        
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 1.2;
+            
+            const rod = new THREE.Mesh(rodGeometry, rodMaterial);
+            rod.position.x = Math.cos(angle) * radius;
+            rod.position.z = Math.sin(angle) * radius;
+            rod.position.y = 5;
+            
+            const rodTip = new THREE.Mesh(rodTipGeometry, rodTipMaterial);
+            rodTip.position.y = -2.15;
+            rodTip.rotation.x = Math.PI;
+            rod.add(rodTip);
+            
+            rodGroup.add(rod);
+            
+            // Add interactive handle for each rod
+            const handleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const handleMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xf44336,
+                roughness: 0.1,
+                metalness: 0.9,
+                emissive: 0xf44336,
+                emissiveIntensity: 0.5
+            });
+            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+            handle.position.x = Math.cos(angle) * radius;
+            handle.position.z = Math.sin(angle) * radius;
+            handle.position.y = 8;
+            handle.userData = { isRodHandle: true, rodIndex: i };
+            
+            rodHandleGroup.add(handle);
+            
+            // Add guide tube for each rod
+            const guideGeometry = new THREE.CylinderGeometry(0.18, 0.18, 6, 16);
+            const guideMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x555555,
+                roughness: 0.4,
+                metalness: 0.7,
+                transparent: true,
+                opacity: 0.7
+            });
+            const guide = new THREE.Mesh(guideGeometry, guideMaterial);
+            guide.position.x = Math.cos(angle) * radius;
+            guide.position.z = Math.sin(angle) * radius;
+            guide.position.y = 3;
+            scene.add(guide);
+        }
+        
+        // Improved coolant pipes with valves
+        const createPipe = (startX, startY, startZ, endX, endY, endZ, color, radius = 0.25) => {
+            const direction = new THREE.Vector3(endX - startX, endY - startY, endZ - startZ);
+            const length = direction.length();
+            
+            const pipeGeometry = new THREE.CylinderGeometry(radius, radius, length, 16);
+            const pipeMaterial = new THREE.MeshStandardMaterial({ 
+                color: color,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            
+            const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
+            
+            pipe.position.set((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2);
+            pipe.lookAt(new THREE.Vector3(endX, endY, endZ));
+            pipe.rotateX(Math.PI / 2);
+            
+            // Add valve at midpoint
+            const valveGeometry = new THREE.SphereGeometry(radius * 1.5, 16, 16);
+            const valveMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                roughness: 0.3,
+                metalness: 0.9
+            });
+            const valve = new THREE.Mesh(valveGeometry, valveMaterial);
+            valve.position.set((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2);
+            
+            const valveHandleGeometry = new THREE.CylinderGeometry(0.05, 0.05, radius * 3, 8);
+            const valveHandle = new THREE.Mesh(valveHandleGeometry, valveMaterial);
+            valveHandle.position.set((startX + endX) / 2 + radius * 1.5, (startY + endY) / 2, (startZ + endZ) / 2);
+            valveHandle.rotation.z = Math.PI / 2;
+            
+            const valveGroup = new THREE.Group();
+            valveGroup.add(pipe);
+            valveGroup.add(valve);
+            valveGroup.add(valveHandle);
+            
+            return valveGroup;
+        };
+        
+        // Create complete cooling system with primary and secondary loops
+        const pipes = new THREE.Group();
+        
+        // Primary coolant loop (hot leg)
+        const hotLeg = createPipe(2.5, 4, 0, 7, 4, 0, 0x3498db, 0.3);
+        pipes.add(hotLeg);
+        
+        // Primary coolant loop (cold leg)
+        const coldLeg = createPipe(-2.5, 4, 0, -7, 4, 0, 0x3498db, 0.3);
+        pipes.add(coldLeg);
+        
+        // Create steam generators with more detail
+        const sgBaseGeometry = new THREE.CylinderGeometry(1.5, 1.5, 1, 16);
+        const sgBaseMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x555555,
+            roughness: 0.4,
+            metalness: 0.6
+        });
+        
+        const sgBodyGeometry = new THREE.CylinderGeometry(1.2, 1.2, 6, 32);
+        const sgBodyMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x95a5a6,
+            roughness: 0.3,
+            metalness: 0.7
+        });
+        
+        const sgTopGeometry = new THREE.CylinderGeometry(1, 1.2, 1, 16);
+        const sgTopMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x777777,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        
+        // Steam generator 1
+        const steamGen1Base = new THREE.Mesh(sgBaseGeometry, sgBaseMaterial);
+        steamGen1Base.position.set(7, 0.5, 0);
+        
+        const steamGen1Body = new THREE.Mesh(sgBodyGeometry, sgBodyMaterial);
+        steamGen1Body.position.set(7, 4, 0);
+        steamGen1Body.rotation.z = Math.PI / 2;
+        
+        const steamGen1Top = new THREE.Mesh(sgTopGeometry, sgTopMaterial);
+        steamGen1Top.position.set(7, 7.5, 0);
+        steamGen1Top.rotation.z = Math.PI / 2;
+        
+        pipes.add(steamGen1Base);
+        pipes.add(steamGen1Body);
+        pipes.add(steamGen1Top);
+        
+        // Steam generator 2
+        const steamGen2Base = new THREE.Mesh(sgBaseGeometry, sgBaseMaterial);
+        steamGen2Base.position.set(-7, 0.5, 0);
+        
+        const steamGen2Body = new THREE.Mesh(sgBodyGeometry, sgBodyMaterial);
+        steamGen2Body.position.set(-7, 4, 0);
+        steamGen2Body.rotation.z = Math.PI / 2;
+        
+        const steamGen2Top = new THREE.Mesh(sgTopGeometry, sgTopMaterial);
+        steamGen2Top.position.set(-7, 7.5, 0);
+        steamGen2Top.rotation.z = Math.PI / 2;
+        
+        pipes.add(steamGen2Base);
+        pipes.add(steamGen2Body);
+        pipes.add(steamGen2Top);
+        
+        // Secondary loop pipes (steam lines)
+        const steamLine1 = createPipe(7, 7, 0, 7, 7, 4, 0xffffff, 0.2);
+        pipes.add(steamLine1);
+        
+        const steamLine2 = createPipe(-7, 7, 0, -7, 7, 4, 0xffffff, 0.2);
+        pipes.add(steamLine2);
+        
+        // Feedwater lines
+        const feedwaterLine1 = createPipe(7, 1, 0, 7, 1, 4, 0x3498db, 0.2);
+        pipes.add(feedwaterLine1);
+        
+        const feedwaterLine2 = createPipe(-7, 1, 0, -7, 1, 4, 0x3498db, 0.2);
+        pipes.add(feedwaterLine2);
+        
+        // Connect steam generators with more pipes
+        pipes.add(createPipe(7, 7, 4, 0, 7, 4, 0xffffff, 0.2));
+        pipes.add(createPipe(-7, 7, 4, 0, 7, 4, 0xffffff, 0.2));
+        
+        scene.add(pipes);
+        
+        // Create turbine with more detail
+        const turbineGroup = new THREE.Group();
+        
+        // Turbine casing
+        const turbineCasingGeometry = new THREE.CylinderGeometry(1.5, 1.5, 6, 32);
+        const envMap = new THREE.TextureLoader().load('https://threejs.org/examples/textures/cube/pisa/nx.png'); // just an example
+        envMap.mapping = THREE.EquirectangularReflectionMapping;
+
+        const turbineCasingMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2c3e50,
+            roughness: 0.05,
+            metalness: 1.0,
+            envMap: envMap,
+            envMapIntensity: 1.2
+        });
+
+        const turbineCasing = new THREE.Mesh(turbineCasingGeometry, turbineCasingMaterial);
+        turbineCasing.rotation.z = Math.PI / 2;
+        turbineCasing.position.set(0, 4, 10);
+        turbineGroup.add(turbineCasing);
+        
+        // Turbine blades (multiple stages)
+        const bladeGeometry = new THREE.BoxGeometry(0.08, 2, 0.3);
+        const bladeMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x7f8c8d,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        
+        // High pressure stage
+        for (let s = 0; s < 3; s++) {
+            for (let i = 0; i < 24; i++) {
+                const angle = (i / 24) * Math.PI * 2;
+                const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+                blade.position.set(0, Math.sin(angle) * 1.2, Math.cos(angle) * 1.2);
+                blade.rotation.x = angle;
+                blade.position.x = -2 + s * 2;
+                turbineCasing.add(blade);
+            }
+        }
+        
+        // Low pressure stage (larger)
+        const lpBladeGeometry = new THREE.BoxGeometry(0.1, 3, 0.4);
+        for (let s = 0; s < 2; s++) {
+            for (let i = 0; i < 18; i++) {
+                const angle = (i / 18) * Math.PI * 2;
+                const blade = new THREE.Mesh(lpBladeGeometry, bladeMaterial);
+                blade.position.set(0, Math.sin(angle) * 1.5, Math.cos(angle) * 1.5);
+                blade.rotation.x = angle;
+                blade.position.x = 3 + s * 2.5;
+                turbineCasing.add(blade);
+            }
+        }
+        
+        // Turbine supports
+        const supportGeometry = new THREE.BoxGeometry(0.5, 2, 0.5);
+        for (let i = 0; i < 4; i++) {
+            const support = new THREE.Mesh(supportGeometry, turbineCasingMaterial);
+            support.position.set(-3 + i * 2, 1, 10);
+            turbineGroup.add(support);
+        }
+        
+        scene.add(turbineGroup);
+        
+        // Connect turbine with steam lines
+        const mainSteamLine = createPipe(0, 7, 4, 0, 7, 8, 0xffffff, 0.25);
+        pipes.add(mainSteamLine);
+        
+        const turbineInlet = createPipe(0, 7, 8, 0, 4, 10, 0xffffff, 0.25);
+        pipes.add(turbineInlet);
+        
+        // Condenser (simplified)
+        const condenserGeometry = new THREE.BoxGeometry(6, 3, 4);
+        const condenserMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x34495e,
+            roughness: 0.3,
+            metalness: 0.7
+        });
+        const condenser = new THREE.Mesh(condenserGeometry, condenserMaterial);
+        condenser.position.set(0, 2, 14);
+        scene.add(condenser);
+        
+        // Condenser pipes
+        const condenserInlet = createPipe(0, 4, 10, 0, 4, 12, 0xffffff, 0.2);
+        pipes.add(condenserInlet);
+        
+        const condenserOutlet = createPipe(0, 2, 14, 0, 2, 10, 0x3498db, 0.2);
+        pipes.add(condenserOutlet);
+        
+        // Feedwater pump (simplified)
+        const pumpGeometry = new THREE.CylinderGeometry(1, 1, 2, 16);
+        const pumpMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2980b9,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        const feedwaterPump = new THREE.Mesh(pumpGeometry, pumpMaterial);
+        feedwaterPump.position.set(0, 2, 6);
+        scene.add(feedwaterPump);
+        
+        // Feedwater lines from pump to steam generators
+        pipes.add(createPipe(0, 2, 6, 0, 1, 4, 0x3498db, 0.2));
+        pipes.add(createPipe(0, 1, 4, 7, 1, 0, 0x3498db, 0.2));
+        pipes.add(createPipe(0, 1, 4, -7, 1, 0, 0x3498db, 0.2));
+        
+        // Create control room building
+        const controlRoomGeometry = new THREE.BoxGeometry(6, 4, 8);
+        const controlRoomMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x34495e,
+            roughness: 0.5,
+            metalness: 0.3
+        });
+        const controlRoom = new THREE.Mesh(controlRoomGeometry, controlRoomMaterial);
+        controlRoom.position.set(-8, 2, 8);
+        scene.add(controlRoom);
+        
+        // Add windows to control room
+        const windowGeometry = new THREE.PlaneGeometry(1, 1);
+        const windowMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x88ccee,
+            emissive: 0x88ccee,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.7,
+            side: THREE.DoubleSide
+        });
+        
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+                const window = new THREE.Mesh(windowGeometry, windowMaterial);
+                window.position.set(-8, 3 + j * 1.5, 4.1 + i * 1.5);
+                window.rotation.y = Math.PI;
+                scene.add(window);
+            }
+        }
+        
+        // Add grid lines for reference
+        const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x222222);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+        
+        // Add axes helper
+        const axesHelper = new THREE.AxesHelper(5);
+        scene.add(axesHelper);
+        
+        // Orbit controls (simplified version from original)
+        const OrbitControls = function(object, domElement) {
+            this.object = object;
+            this.domElement = domElement;
+            
+            this.enabled = true;
+            this.target = new THREE.Vector3(0, 4, 0);
+            
+            this.minDistance = 5;
+            this.maxDistance = 50;
+            
+            this.minPolarAngle = 0;
+            this.maxPolarAngle = Math.PI / 2;
+            
+            const scope = this;
+            const EPS = 0.000001;
+            
+            const rotateStart = new THREE.Vector2();
+            const rotateEnd = new THREE.Vector2();
+            const rotateDelta = new THREE.Vector2();
+            
+            const panStart = new THREE.Vector2();
+            const panEnd = new THREE.Vector2();
+            const panDelta = new THREE.Vector2();
+            
+            const dollyStart = new THREE.Vector2();
+            const dollyEnd = new THREE.Vector2();
+            const dollyDelta = new THREE.Vector2();
+            
+            const STATE = { NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2 };
+            let state = STATE.NONE;
+            
+            this.update = function() {
+                const offset = new THREE.Vector3().subVectors(this.object.position, this.target);
+                const radius = offset.length();
+                
+                // restrict radius
+                offset.normalize().multiplyScalar(Math.max(this.minDistance, Math.min(this.maxDistance, radius)));
+                this.object.position.copy(this.target).add(offset);
+                this.object.lookAt(this.target);
+            };
+            
+            function onMouseDown(event) {
+                if (scope.enabled === false) return;
+                
+                event.preventDefault();
+                
+                if (event.button === 0) {
+                    state = STATE.ROTATE;
+                    rotateStart.set(event.clientX, event.clientY);
+                } else if (event.button === 1) {
+                    state = STATE.DOLLY;
+                    dollyStart.set(event.clientX, event.clientY);
+                } else if (event.button === 2) {
+                    state = STATE.PAN;
+                    panStart.set(event.clientX, event.clientY);
+                }
+                
+                document.addEventListener('mousemove', onMouseMove, false);
+                document.addEventListener('mouseup', onMouseUp, false);
+            }
+            
+            function onMouseMove(event) {
+                if (scope.enabled === false) return;
+                
+                event.preventDefault();
+                
+                if (state === STATE.ROTATE) {
+                    rotateEnd.set(event.clientX, event.clientY);
+                    rotateDelta.subVectors(rotateEnd, rotateStart);
+                    
+                    const element = scope.domElement;
+                    const theta = 2 * Math.PI * rotateDelta.x / element.clientWidth;
+                    const phi = 2 * Math.PI * rotateDelta.y / element.clientHeight;
+                    
+                    const position = scope.object.position;
+                    const offset = new THREE.Vector3().subVectors(position, scope.target);
+                    
+                    let currentTheta = Math.atan2(offset.x, offset.z);
+                    let currentPhi = Math.atan2(Math.sqrt(offset.x * offset.x + offset.z * offset.z), offset.y);
+                    
+                    currentTheta -= theta;
+                    currentPhi -= phi;
+                    currentPhi = Math.max(scope.minPolarAngle, Math.min(scope.maxPolarAngle, currentPhi));
+                    
+                    const radius = offset.length();
+                    offset.x = radius * Math.sin(currentPhi) * Math.sin(currentTheta);
+                    offset.y = radius * Math.cos(currentPhi);
+                    offset.z = radius * Math.sin(currentPhi) * Math.cos(currentTheta);
+                    
+                    position.copy(scope.target).add(offset);
+                    scope.object.lookAt(scope.target);
+                    
+                    rotateStart.copy(rotateEnd);
+                } else if (state === STATE.DOLLY) {
+                    dollyEnd.set(event.clientX, event.clientY);
+                    dollyDelta.subVectors(dollyEnd, dollyStart);
+                    
+                    if (dollyDelta.y > 0) {
+                        scope.object.position.sub(scope.target).multiplyScalar(0.95).add(scope.target);
+                    } else {
+                        scope.object.position.sub(scope.target).multiplyScalar(1.05).add(scope.target);
+                    }
+                    
+                    dollyStart.copy(dollyEnd);
+                } else if (state === STATE.PAN) {
+                    panEnd.set(event.clientX, event.clientY);
+                    panDelta.subVectors(panEnd, panStart);
+                    
+                    const element = scope.domElement;
+                    const panAmount = new THREE.Vector3().subVectors(scope.object.position, scope.target);
+                    const distance = panAmount.length();
+                    panAmount.normalize();
+                    
+                    const panLeft = new THREE.Vector3().crossVectors(panAmount, scope.object.up).normalize();
+                    const panUp = new THREE.Vector3().crossVectors(panLeft, panAmount).normalize();
+                    
+                    const panX = -panDelta.x * distance * 0.001;
+                    const panY = panDelta.y * distance * 0.001;
+                    
+                    scope.target.add(panLeft.multiplyScalar(panX)).add(panUp.multiplyScalar(panY));
+                    scope.object.position.add(panLeft.multiplyScalar(panX)).add(panUp.multiplyScalar(panY));
+                    
+                    panStart.copy(panEnd);
+                }
+            }
+            
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove, false);
+                document.removeEventListener('mouseup', onMouseUp, false);
+                state = STATE.NONE;
+            }
+            
+            function onMouseWheel(event) {
+                if (scope.enabled === false) return;
+                
+                event.preventDefault();
+                
+                let delta = event.wheelDelta ? event.wheelDelta : -event.detail * 40;
+                
+                if (delta > 0) {
+                    const newPos = new THREE.Vector3().subVectors(scope.object.position, scope.target).multiplyScalar(0.9).add(scope.target);
+                    if (newPos.distanceTo(scope.target) >= scope.minDistance) {
+                        scope.object.position.copy(newPos);
+                    }
+                } else {
+                    const newPos = new THREE.Vector3().subVectors(scope.object.position, scope.target).multiplyScalar(1.1).add(scope.target);
+                    if (newPos.distanceTo(scope.target) <= scope.maxDistance) {
+                        scope.object.position.copy(newPos);
+                    }
+                }
+            }
+            
+            this.domElement.addEventListener('contextmenu', function(event) { event.preventDefault(); }, false);
+            this.domElement.addEventListener('mousedown', onMouseDown, false);
+            this.domElement.addEventListener('mousewheel', onMouseWheel, false);
+            this.domElement.addEventListener('DOMMouseScroll', onMouseWheel, false);
+        };
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Advanced simulation variables
+        const simulationParams = {
+            // Core parameters
+            temperature: 285.0,
+            targetTemperature: 285.0,
+            pressure: 15.5,
+            targetPressure: 15.5,
+            powerOutput: 95.0,
+            targetPower: 95.0,
+            neutronFlux: 3.2e14,
+            coolantFlowRate: 85.0,
+            controlRods: 65.0,
+            
+            // Secondary system
+            steamPressure: 6.2,
+            feedwaterTemp: 215.0,
+            
+            // Fuel parameters
+            fuelBurnup: 12.3,
+            xenonPoisoning: 2.1,
+            
+            // Safety systems
+            boronConcentration: 0.0,
+            backupCoolingActive: false,
+            containmentSealed: false,
+            
+            // Reactor state
+            reactorState: 'OPERATIONAL', // 'OPERATIONAL', 'TRIP', 'COOLDOWN'
+            scramActive: false,
+            lastScramTime: 0,
+            
+            // Alerts
+            alerts: [],
+            lastAlertTime: 0,
+            
+            // Animation
+            animate: true,
+            turbineSpeed: 0,
+            
+            // Interaction
+            selectedRod: null,
+            dragStartY: 0
+        };
+        
+        // Physics constants
+        const PHYSICS = {
+            ROD_EFFECTIVENESS: 0.015, // How much each % of rod insertion affects power
+            TEMP_CHANGE_RATE: 0.05,    // Rate of temperature change
+            PRESSURE_CHANGE_RATE: 0.02,
+            POWER_CHANGE_RATE: 0.03,
+            FLUX_CHANGE_RATE: 0.04,
+            COOLANT_EFFECT: 0.5,       // How much coolant flow affects temperature
+            TEMP_POWER_FACTOR: 0.1,    // How temperature affects power output
+            MAX_TEMP: 350,             // Critical temperature (C)
+            MAX_PRESSURE: 18,          // Critical pressure (MPa)
+            SCRAM_COOLDOWN_TIME: 10    // Seconds to cooldown after SCRAM
+        };
+        
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                this.classList.add('active');
+                const tabName = this.getAttribute('data-tab');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+        
+        // Set up slider interactions
+        const rodSlider = document.getElementById('rod-slider');
+        const rodPercentage = document.getElementById('rod-percentage');
+        const coolantSlider = document.getElementById('coolant-slider');
+        const coolantPercentage = document.getElementById('coolant-percentage');
+        
+        rodSlider.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            simulationParams.controlRods = value;
+            rodPercentage.textContent = value.toFixed(1);
+            updateRodPosition();
+        });
+        
+        coolantSlider.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            simulationParams.coolantFlowRate = value;
+            coolantPercentage.textContent = value.toFixed(1);
+        });
+        
+        // Set up button interactions
+        document.getElementById('scram-button').addEventListener('click', function() {
+            // SCRAM - emergency shutdown
+            if (simulationParams.reactorState !== 'TRIP') {
+                simulationParams.scramActive = true;
+                simulationParams.lastScramTime = Date.now();
+                simulationParams.reactorState = 'TRIP';
+                simulationParams.controlRods = 100;
+                rodSlider.value = 100;
+                rodPercentage.textContent = '100.0';
+                updateRodPosition();
+                
+                // Show reactor trip message
+                document.getElementById('reactor-state').style.display = 'block';
+                
+                // Add alert
+                addAlert('CRITICAL: Reactor SCRAM initiated', 'critical');
+            }
+        });
+        
+        document.getElementById('reset-button').addEventListener('click', function() {
+            // Reset simulation after SCRAM
+            simulationParams.scramActive = false;
+            simulationParams.reactorState = 'OPERATIONAL';
+            document.getElementById('reactor-state').style.display = 'none';
+            
+            // Add alert
+            addAlert('System reset: Reactor returning to operational state', 'normal');
+        });
+        
+        document.getElementById('withdraw-button').addEventListener('click', function() {
+            // Full withdrawal of control rods
+            if (simulationParams.reactorState === 'OPERATIONAL') {
+                simulationParams.controlRods = 0;
+                rodSlider.value = 0;
+                rodPercentage.textContent = '0.0';
+                updateRodPosition();
+                
+                // Add warning
+                addAlert('WARNING: Control rods fully withdrawn', 'warning');
+            }
+        });
+        
+        document.getElementById('boron-injection-button').addEventListener('click', function() {
+            // Boron injection system
+            if (simulationParams.boronConcentration < 50) {
+                simulationParams.boronConcentration += 10;
+                addAlert('Boron injection system activated', 'normal');
+            } else {
+                addAlert('Boron injection system at maximum', 'warning');
+            }
+        });
+        
+        document.getElementById('backup-cooling-button').addEventListener('click', function() {
+            // Backup cooling system
+            simulationParams.backupCoolingActive = !simulationParams.backupCoolingActive;
+            if (simulationParams.backupCoolingActive) {
+                addAlert('Backup cooling system activated', 'normal');
+            } else {
+                addAlert('Backup cooling system deactivated', 'normal');
+            }
+        });
+        
+        document.getElementById('containment-button').addEventListener('click', function() {
+            // Containment seal
+            simulationParams.containmentSealed = !simulationParams.containmentSealed;
+            if (simulationParams.containmentSealed) {
+                addAlert('Containment building sealed', 'normal');
+            } else {
+                addAlert('Containment building unsealed', 'normal');
+            }
+        });
+        
+        document.getElementById('diagnostic-button').addEventListener('click', function() {
+            // Run diagnostic
+            addAlert('Diagnostic complete: All systems within normal parameters', 'normal');
+        });
+        
+        // Raycaster for rod interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let isDraggingRod = false;
+        
+        function onMouseClick(event) {
+            if (simulationParams.reactorState === 'TRIP') return;
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(rodHandleGroup.children);
+            
+            if (intersects.length > 0) {
+                const handle = intersects[0].object;
+                if (handle.userData.isRodHandle) {
+                    isDraggingRod = true;
+                    simulationParams.selectedRod = handle;
+                    simulationParams.dragStartY = event.clientY;
+                    
+                    document.addEventListener('mousemove', onMouseDrag);
+                    document.addEventListener('mouseup', onMouseDragEnd);
+                    document.body.style.cursor = 'grab';
+                }
+            }
+        }
+        
+        function onMouseDrag(event) {
+            if (isDraggingRod && simulationParams.selectedRod) {
+                const dragDist = (simulationParams.dragStartY - event.clientY) * 0.05;
+                let newValue = simulationParams.controlRods - dragDist;
+                newValue = Math.max(0, Math.min(100, newValue));
+                
+                simulationParams.controlRods = newValue;
+                rodSlider.value = newValue.toFixed(1);
+                rodPercentage.textContent = newValue.toFixed(1);
+                
+                updateRodPosition();
+                simulationParams.dragStartY = event.clientY;
+            }
+        }
+        
+        function onMouseDragEnd() {
+            isDraggingRod = false;
+            simulationParams.selectedRod = null;
+            document.removeEventListener('mousemove', onMouseDrag);
+            document.removeEventListener('mouseup', onMouseDragEnd);
+            document.body.style.cursor = 'auto';
+        }
+        
+        renderer.domElement.addEventListener('mousedown', onMouseClick);
+        
+        function updateRodPosition() {
+            rodGroup.position.y = 4 - (simulationParams.controlRods / 100) * 3;
+            rodHandleGroup.position.y = 1 - (simulationParams.controlRods / 100) * 3;
+        }
+        
+        // Alert system
+        function addAlert(message, type = 'normal') {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            simulationParams.alerts.unshift({
+                message: `${timeString}: ${message}`,
+                type: type,
+                time: now.getTime()
+            });
+            
+            // Keep only the last 5 alerts
+            if (simulationParams.alerts.length > 5) {
+                simulationParams.alerts.pop();
+            }
+            
+            updateAlertsDisplay();
+        }
+        
+        function updateAlertsDisplay() {
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = '';
+            
+            simulationParams.alerts.forEach(alert => {
+                const alertElement = document.createElement('div');
+                alertElement.className = `alert-item alert-${alert.type}`;
+                alertElement.textContent = alert.message;
+                alertsContainer.appendChild(alertElement);
+            });
+        }
+        
+        // Update stats display
+        function updateStats() {
+            // Update values
+            document.getElementById('temp-value').textContent = simulationParams.temperature.toFixed(1) + '°C';
+            document.getElementById('pressure-value').textContent = simulationParams.pressure.toFixed(1) + ' MPa';
+            document.getElementById('power-value').textContent = simulationParams.powerOutput.toFixed(1) + '%';
+            document.getElementById('flux-value').textContent = simulationParams.neutronFlux.toExponential(1) + ' n/cm²s';
+            document.getElementById('coolant-value').textContent = (simulationParams.coolantFlowRate / 100 * 20).toFixed(1) + ' m³/s';
+            document.getElementById('rods-value').textContent = simulationParams.controlRods.toFixed(1) + '% Inserted';
+            document.getElementById('state-value').textContent = simulationParams.reactorState;
+            
+            // Update progress bars
+            document.getElementById('temp-bar').style.width = (simulationParams.temperature / PHYSICS.MAX_TEMP * 100) + '%';
+            document.getElementById('pressure-bar').style.width = (simulationParams.pressure / PHYSICS.MAX_PRESSURE * 100) + '%';
+            document.getElementById('power-bar').style.width = simulationParams.powerOutput + '%';
+            
+            // Update diagnostic values
+            document.getElementById('burnup-value').textContent = simulationParams.fuelBurnup.toFixed(1) + '%';
+            document.getElementById('xenon-value').textContent = simulationParams.xenonPoisoning.toFixed(1) + '%';
+            document.getElementById('moderator-value').textContent = (simulationParams.temperature + 5.5).toFixed(1) + '°C';
+            
+            // Update status colors based on values
+            updateStatusColors();
+        }
+        
+        function updateStatusColors() {
+            const tempElement = document.getElementById('temp-value');
+            const pressureElement = document.getElementById('pressure-value');
+            const powerElement = document.getElementById('power-value');
+            const stateElement = document.getElementById('state-value');
+            const safetyElement = document.getElementById('safety-status');
+            
+            // Temperature status
+            if (simulationParams.temperature > 320) {
+                tempElement.className = 'stat-value critical';
+            } else if (simulationParams.temperature > 300) {
+                tempElement.className = 'stat-value warning';
+            } else {
+                tempElement.className = 'stat-value normal';
+            }
+            
+            // Pressure status
+            if (simulationParams.pressure > 16.5) {
+                pressureElement.className = 'stat-value critical';
+            } else if (simulationParams.pressure > 15.8) {
+                pressureElement.className = 'stat-value warning';
+            } else {
+                pressureElement.className = 'stat-value normal';
+            }
+            
+            // Power status
+            if (simulationParams.powerOutput > 98) {
+                powerElement.className = 'stat-value warning';
+            } else {
+                powerElement.className = 'stat-value normal';
+            }
+            
+            // Reactor state
+            if (simulationParams.reactorState === 'TRIP') {
+                stateElement.className = 'stat-value critical';
+            } else if (simulationParams.reactorState === 'COOLDOWN') {
+                stateElement.className = 'stat-value warning';
+            } else {
+                stateElement.className = 'stat-value normal';
+            }
+            
+            // Safety systems
+            if (simulationParams.scramActive || simulationParams.backupCoolingActive || simulationParams.containmentSealed) {
+                safetyElement.className = 'stat-value warning';
+                safetyElement.textContent = 'ACTIVE';
+            } else {
+                safetyElement.className = 'stat-value normal';
+                safetyElement.textContent = 'ONLINE';
+            }
+        }
+        
+        // Physics-based simulation update
+        function updateSimulation(deltaTime) {
+            if (simulationParams.reactorState === 'TRIP') {
+                // Reactor is in SCRAM state - cool down
+                simulationParams.targetTemperature = 100;
+                simulationParams.targetPower = 0;
+                simulationParams.targetPressure = 5;
+                
+                // Check if cooldown is complete
+                if (Date.now() - simulationParams.lastScramTime > PHYSICS.SCRAM_COOLDOWN_TIME * 1000) {
+                    simulationParams.reactorState = 'COOLDOWN';
+                    addAlert('Reactor in cooldown phase', 'normal');
+                }
+            } else if (simulationParams.reactorState === 'COOLDOWN') {
+                // Continue cooling
+                simulationParams.targetTemperature = 50;
+                simulationParams.targetPower = 0;
+                simulationParams.targetPressure = 1;
+            } else {
+                // Normal operation - calculate target values based on control rod position
+                const rodEffect = simulationParams.controlRods * PHYSICS.ROD_EFFECTIVENESS;
+                const coolantEffect = simulationParams.coolantFlowRate / 100 * PHYSICS.COOLANT_EFFECT;
+                
+                // Calculate target power based on rod position and boron concentration
+                simulationParams.targetPower = 100 - rodEffect * 100 - simulationParams.boronConcentration * 0.5;
+                simulationParams.targetPower = Math.max(0, Math.min(100, simulationParams.targetPower));
+                
+                // Calculate target temperature based on power and coolant flow
+                const tempFromPower = 200 + simulationParams.targetPower * 0.8;
+                simulationParams.targetTemperature = tempFromPower - coolantEffect * 50;
+                
+                // Calculate target pressure based on temperature
+                simulationParams.targetPressure = 10 + (simulationParams.targetTemperature / 350 * 8);
+                
+                // Calculate neutron flux based on power
+                simulationParams.neutronFlux = 1e14 + (simulationParams.powerOutput / 100 * 2.5e14);
+                
+                // Slowly increase fuel burnup
+                simulationParams.fuelBurnup += deltaTime * 0.001;
+                if (simulationParams.fuelBurnup > 100) simulationParams.fuelBurnup = 100;
+                
+                // Xenon poisoning dynamics
+                if (simulationParams.powerOutput > 50) {
+                    simulationParams.xenonPoisoning += deltaTime * 0.002;
+                } else {
+                    simulationParams.xenonPoisoning -= deltaTime * 0.001;
+                }
+                simulationParams.xenonPoisoning = Math.max(0, Math.min(10, simulationParams.xenonPoisoning));
+            }
+            
+            // Smoothly transition to target values
+            simulationParams.temperature += (simulationParams.targetTemperature - simulationParams.temperature) * PHYSICS.TEMP_CHANGE_RATE * deltaTime;
+            simulationParams.pressure += (simulationParams.targetPressure - simulationParams.pressure) * PHYSICS.PRESSURE_CHANGE_RATE * deltaTime;
+            simulationParams.powerOutput += (simulationParams.targetPower - simulationParams.powerOutput) * PHYSICS.POWER_CHANGE_RATE * deltaTime;
+            
+            // Check for critical conditions
+            if (simulationParams.reactorState === 'OPERATIONAL') {
+                if (simulationParams.temperature > PHYSICS.MAX_TEMP * 0.9) {
+                    if (Date.now() - simulationParams.lastAlertTime > 5000) {
+                        addAlert('CRITICAL: Core temperature approaching limit', 'critical');
+                        simulationParams.lastAlertTime = Date.now();
+                    }
+                    
+                    // Auto SCRAM if temperature exceeds limit
+                    if (simulationParams.temperature > PHYSICS.MAX_TEMP) {
+                        document.getElementById('scram-button').click();
+                    }
+                }
+                
+                if (simulationParams.pressure > PHYSICS.MAX_PRESSURE * 0.9) {
+                    if (Date.now() - simulationParams.lastAlertTime > 5000) {
+                        addAlert('CRITICAL: Pressure approaching limit', 'critical');
+                        simulationParams.lastAlertTime = Date.now();
+                    }
+                }
+                
+                if (simulationParams.controlRods < 10 && Date.now() - simulationParams.lastAlertTime > 10000) {
+                    addAlert('WARNING: Control rods nearly withdrawn', 'warning');
+                    simulationParams.lastAlertTime = Date.now();
+                }
+            }
+        }
+        
+        // Animation loop
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Update simulation
+            updateSimulation(deltaTime * 10); // Speed up simulation slightly
+            
+            // Update stats display
+            updateStats();
+            
+            // Animate turbine if power is on
+            if (simulationParams.powerOutput > 0 && simulationParams.reactorState === 'OPERATIONAL') {
+                simulationParams.turbineSpeed = simulationParams.powerOutput / 10;
+                // Smoothly accelerate/decelerate based on power output
+            const targetSpeed = simulationParams.powerOutput / 10;
+            simulationParams.turbineSpeed += (targetSpeed - simulationParams.turbineSpeed) * 0.05;
+            turbineGroup.rotation.z += deltaTime * simulationParams.turbineSpeed;
+            const vibration = Math.sin(elapsedTime * 20) * 0.005;
+            turbineGroup.position.x = vibration;
+
+            }
+            
+            // Animate core glow
+            coreGlow.intensity = 1 + Math.sin(elapsedTime * 3) * 0.2;
+            core.material.emissiveIntensity = 0.5 + Math.sin(elapsedTime * 2) * 0.1;
+            
+            // Update controls
+            controls.update();
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
