@@ -47,7 +47,7 @@ cd NukeTwin
 
 Run the Project:
 ```bash
-open index_2.html
+open index.html
 # or just double-click the file
 
 ```
