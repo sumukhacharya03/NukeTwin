@@ -2,8 +2,6 @@
 
 A Real-Time interactive 3D Digital Twin simulation of an advanced Nuclear Reactor using Three.js
 
----
-
 <img width="959" alt="image" src="https://github.com/user-attachments/assets/1f540c67-03de-4a61-9bf7-ca13d835b36e" />
 
 
@@ -11,7 +9,6 @@ A Real-Time interactive 3D Digital Twin simulation of an advanced Nuclear Reacto
 
 NukeTwin is a browser-based simulation that visualizes the operational behavior of a nuclear reactor. It includes real-time stats, safety systems, control panels, and emergency shutdown features. Built entirely using WebGL via Three.js, it’s a perfect demonstration of visual engineering and digital twin technology.
 
----
 
 ## Technologies Used
 
@@ -19,8 +16,6 @@ NukeTwin is a browser-based simulation that visualizes the operational behavior 
 - **HTML5 / CSS3** – User interface styling and layout
 - **JavaScript (ES6)** – Core simulation and interaction logic
 - **dat.GUI / TWEEN.js** – Interface and smooth transitions (used optionally)
-
----
 
 ## How It Works
 
@@ -30,15 +25,13 @@ NukeTwin is a browser-based simulation that visualizes the operational behavior 
 - Alerts and reactor state display conditions like critical warnings and operational status.
 - User interactions influence physical variables in the simulation (like inserting rods to reduce power output).
 
----
-
 ## Getting Started
 
-### Prerequisites
+### Prerequisites:
 - A modern web browser (Chrome, Firefox, Edge)
 - No installations or server needed (runs fully client-side)
 
-### Installation
+### Installation:
 Clone the repository or download the files:
 ```bash
 git clone https://github.com/yourusername/NukeTwin.git
